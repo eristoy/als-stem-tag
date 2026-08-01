@@ -15,8 +15,22 @@ alongside your stems or embeds it into the audio files themselves.
 
 ## Install
 
+**As a standalone command (recommended).** Because the tool is pure standard
+library, `install.sh` bundles it into a single self-contained executable
+(a [zipapp](https://docs.python.org/3/library/zipapp.html)) — no venv, no pip:
+
 ```bash
-pip install -e .
+./install.sh            # -> ~/.local/bin/als-stem-tag
+./install.sh /path/foo  # or a custom destination
+```
+
+`~/.local/bin` is on most `$PATH`s already. Re-run `install.sh` after pulling
+changes to refresh the command. It only needs `python3.14` on your PATH.
+
+**As an editable package (for development):**
+
+```bash
+pip install -e ".[dev]"
 ```
 
 ## Usage
