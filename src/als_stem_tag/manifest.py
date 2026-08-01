@@ -13,11 +13,17 @@ AUDIO_EXTENSIONS = {".wav", ".aif", ".aiff", ".mp3", ".flac", ".ogg", ".m4a"}
 
 
 def list_audio_files(stems_dir: Path) -> list[str]:
-    """Return sorted names of audio files directly inside ``stems_dir``."""
+    """Return sorted names of audio files directly inside ``stems_dir``.
+
+    Dotfiles are skipped, notably macOS AppleDouble ``._*`` stubs that appear
+    alongside every file on non-HFS/network volumes and are not real audio.
+    """
     return sorted(
         p.name
         for p in stems_dir.iterdir()
-        if p.is_file() and p.suffix.lower() in AUDIO_EXTENSIONS
+        if p.is_file()
+        and not p.name.startswith(".")
+        and p.suffix.lower() in AUDIO_EXTENSIONS
     )
 
 

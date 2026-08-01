@@ -10,6 +10,13 @@ def test_list_audio_files_filters_non_audio(stems_dir: Path):
     assert files == ["kick.wav"]  # notes.txt excluded
 
 
+def test_list_audio_files_skips_appledouble_stubs(stems_dir: Path):
+    # macOS drops a "._name" AppleDouble stub next to each file on some volumes.
+    (stems_dir / "._kick.wav").write_bytes(b"\x00\x05not audio")
+    (stems_dir / ".DS_Store").write_bytes(b"\x00")
+    assert list_audio_files(stems_dir) == ["kick.wav"]
+
+
 def test_build_manifest_shape(als_file: Path, stems_dir: Path):
     info = parse_als(als_file)
     manifest = build_manifest(info, list_audio_files(stems_dir))
