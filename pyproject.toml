@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "als-stem-tag"
+version = "0.1.0"
+description = "Attach Ableton Live project metadata (BPM, key/scale, time signature) to exported stems."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Eric Stoycon" }]
+keywords = ["ableton", "als", "stems", "bwf", "ixml", "audio", "metadata"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: MacOS",
+    "Topic :: Multimedia :: Sound/Audio",
+]
+# No runtime dependencies: parsing and WAV/AIFF chunk writing use only the stdlib.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+als-stem-tag = "als_stem_tag.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/estoycon/als-stem-tag"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

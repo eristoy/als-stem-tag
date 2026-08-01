@@ -1,0 +1,101 @@
+# als-stem-tag
+
+Ableton Live's stem/audio export has no way to attach project metadata — BPM,
+key/scale, time signature — to the exported files. `als-stem-tag` reads that
+metadata straight out of your `.als` project and either writes a manifest
+alongside your stems or embeds it into the audio files themselves.
+
+- **Zero dependencies.** Pure Python standard library (parsing, RIFF/AIFF chunk
+  writing). Targets macOS, Python 3.11+.
+- **Non-destructive by default.** Writes a `stems-info.json` next to your stems.
+  File embedding is strictly opt-in (`--tag-files`).
+- **Version-aware parsing.** Verified against Ableton Live 12.4.1; falls back
+  across known layout differences (e.g. Live 12 renamed `MasterTrack` →
+  `MainTrack`) and fails with a clear message rather than a wrong value.
+
+## Install
+
+```bash
+pip install -e .
+```
+
+## Usage
+
+```bash
+als-stem-tag export --als "MyProject.als" --stems-dir "./Stems" \
+    [--tag-files] [--format json|txt|both]
+```
+
+| Flag | Description |
+| --- | --- |
+| `--als` | Path to the `.als` project file (required). |
+| `--stems-dir` | Folder of exported stems to describe (required). |
+| `--format` | Manifest format: `json` (default), `txt`, or `both`. |
+| `--tag-files` | Also embed metadata into WAV/AIFF files **in place**. |
+
+### Example
+
+```bash
+als-stem-tag export --als "Distaint Static.als" --stems-dir "./Stems" --format both
+```
+
+Produces `./Stems/stems-info.json`:
+
+```json
+{
+  "project": "Distaint Static",
+  "bpm": 84.0,
+  "time_signature": "4/4",
+  "key": "C Major",
+  "scale": "Major",
+  "exported_at": "2026-08-01T18:59:00-07:00",
+  "ableton_version": "Ableton Live 12.4.1",
+  "file_list": [
+    "Bass.wav",
+    "Drums.wav",
+    "Lead.wav"
+  ]
+}
+```
+
+## Embedding metadata into files (`--tag-files`)
+
+With `--tag-files`, each **WAV** file gets three chunks and each **AIFF** file
+gets an annotation:
+
+| Format | What's written | Why |
+| --- | --- | --- |
+| WAV | `bext` (Broadcast Wave) | Human-readable summary line. |
+| WAV | `iXML` | Structured `<STEMINFO>` block with individual fields. |
+| WAV | `acid` | Tempo + root note that many DAWs (incl. Ableton) auto-detect. |
+| AIFF | `ANNO` | Text annotation with the same summary line. |
+
+Tagging is **idempotent** — re-running replaces the tool's own chunks instead of
+duplicating them, and leaves the audio data untouched.
+
+> **MP3 is not supported.** ID3 tagging would require a third-party library
+> (`mutagen`); this tool is deliberately dependency-free. MP3 files are listed
+> in the manifest and skipped by `--tag-files`.
+
+## What gets extracted
+
+| Field | Source in the `.als` XML |
+| --- | --- |
+| `bpm` | `LiveSet/MainTrack/DeviceChain/Mixer/Tempo/Manual` (fallback: `MasterTrack`, then any `Tempo/Manual`). |
+| `time_signature` | Master-track time-signature `EnumEvent` (Ableton packed enum, e.g. `201` → `4/4`). |
+| `key` / `scale` | `LiveSet/ScaleInformation` `Root` (0–11) + `Name` (scale index). Absent if the project isn't using Scale mode. |
+| `project` | The `.als` filename (Live doesn't store a project name in the XML). |
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
+Tests use a synthetic in-memory `.als` and hand-built WAV/AIFF files, so they
+don't depend on a real Ableton project.
+
+## License
+
+MIT
