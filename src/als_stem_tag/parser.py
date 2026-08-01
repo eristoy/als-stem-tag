@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 import xml.etree.ElementTree as ET
 
-from .scales import root_note_name, scale_name
+from .scales import root_note_name, scale_index_from_name, scale_name
 
 
 class AlsParseError(Exception):
@@ -126,16 +126,38 @@ def _extract_time_signature(root: ET.Element) -> tuple[int, int] | None:
         return None
 
 
-def _extract_scale(root: ET.Element) -> tuple[int | None, int | None]:
-    """Return (root_index, scale_index) from the global ScaleInformation, if any."""
+def _extract_scale(
+    root: ET.Element,
+) -> tuple[int | None, str | None, int | None]:
+    """Return (root_index, scale_name, scale_index) from the global scale, if any.
+
+    Handles both Live 12 schemas:
+      * 12.2+ release: ``<Root Value="2"/><Name Value="2"/>`` (integer index).
+      * 12.0 beta:     ``<RootNote Value="5"/><Name Value="Lydian"/>`` (string).
+    """
     si = root.find("LiveSet/ScaleInformation")
     if si is None:
-        return None, None
+        return None, None, None
+
+    # Root element was renamed RootNote -> Root across Live 12 versions.
     root_el = si.find("Root")
-    name_el = si.find("Name")
+    if root_el is None:
+        root_el = si.find("RootNote")
     root_idx = _to_int(root_el.get("Value")) if root_el is not None else None
-    scale_idx = _to_int(name_el.get("Value")) if name_el is not None else None
-    return root_idx, scale_idx
+
+    # Name is either an integer index or a literal name string.
+    name_el = si.find("Name")
+    scale_str: str | None = None
+    scale_idx: int | None = None
+    if name_el is not None:
+        raw = name_el.get("Value")
+        scale_idx = _to_int(raw)
+        if scale_idx is not None:
+            scale_str = scale_name(scale_idx)          # index -> name
+        elif raw:
+            scale_str = raw                            # already a name
+            scale_idx = scale_index_from_name(raw)     # best-effort name -> index
+    return root_idx, scale_str, scale_idx
 
 
 def _prefers_flats(root: ET.Element) -> bool:
@@ -164,10 +186,9 @@ def parse_als(als_path: str | Path) -> ProjectInfo:
     ts = _extract_time_signature(root)
     ts_str = f"{ts[0]}/{ts[1]}" if ts else None
 
-    root_idx, scale_idx = _extract_scale(root)
+    root_idx, scale_str, scale_idx = _extract_scale(root)
     prefer_flat = _prefers_flats(root)
     root_name = root_note_name(root_idx, prefer_flat)
-    scale_str = scale_name(scale_idx)
     key = f"{root_name} {scale_str}".strip() if root_name and scale_str else None
 
     return ProjectInfo(

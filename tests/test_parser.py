@@ -40,6 +40,24 @@ def test_missing_scale_is_none(tmp_path: Path):
     assert info.scale is None
 
 
+def test_beta_schema_string_scale(tmp_path: Path):
+    # Live 12.0 beta stored RootNote (not Root) and a scale-name string.
+    xml = (
+        '<?xml version="1.0"?><Ableton Creator="Ableton Live 12.0b29">'
+        "<LiveSet><MainTrack><DeviceChain><Mixer><Tempo>"
+        '<Manual Value="128" /></Tempo></Mixer></DeviceChain></MainTrack>'
+        '<ScaleInformation><RootNote Value="5" /><Name Value="Lydian" />'
+        "</ScaleInformation></LiveSet></Ableton>"
+    )
+    path = tmp_path / "Beta.als"
+    path.write_bytes(gzip.compress(xml.encode()))
+    info = parse_als(path)
+    assert info.root_note == 5
+    assert info.key == "F Lydian"
+    assert info.scale == "Lydian"
+    assert info.scale_index == 4  # reverse-mapped from the name
+
+
 def test_not_gzip_raises(tmp_path: Path):
     path = tmp_path / "bad.als"
     path.write_bytes(b"this is not gzip")

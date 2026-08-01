@@ -68,3 +68,17 @@ def scale_name(scale_index: int | None) -> str | None:
     if 0 <= scale_index < len(SCALE_NAMES):
         return SCALE_NAMES[scale_index]
     return f"Scale#{scale_index}"
+
+
+_SCALE_INDEX_BY_NAME = {name.lower(): i for i, name in enumerate(SCALE_NAMES)}
+
+
+def scale_index_from_name(name: str | None) -> int | None:
+    """Reverse lookup: a scale name string (e.g. "Lydian") -> its index, or None.
+
+    Live 12.0 beta stored the scale as a literal name string rather than an
+    index; this maps those back to the canonical index when it recognises them.
+    """
+    if not name:
+        return None
+    return _SCALE_INDEX_BY_NAME.get(name.strip().lower())
