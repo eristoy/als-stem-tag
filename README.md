@@ -32,6 +32,7 @@ als-stem-tag export --als "MyProject.als" --stems-dir "./Stems" \
 | `--stems-dir` | Folder of exported stems to describe (required). |
 | `--format` | Manifest format: `json` (default), `txt`, or `both`. |
 | `--tag-files` | Also embed metadata into WAV/AIFF files **in place**. |
+| `-v`, `--verbose` | Print every extracted field, including raw scale indices. |
 
 ### Example
 

@@ -36,6 +36,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default="json",
         help="Manifest format(s) to write (default: json).",
     )
+    export.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Print every extracted field, including raw scale indices.",
+    )
     export.set_defaults(func=_cmd_export)
     return parser
 
@@ -72,7 +78,12 @@ def _cmd_export(args: argparse.Namespace) -> int:
 
     # Report what we parsed.
     print(f"Parsed {als_path.name} ({info.ableton_version or 'unknown version'}):")
-    print(f"  BPM: {info.bpm}   Time sig: {info.time_signature}   Key: {info.key}")
+    if args.verbose:
+        for field, value in info.to_dict().items():
+            print(f"  {field:<27} {value}")
+        print(f"  {'audio_files':<27} {len(files)}")
+    else:
+        print(f"  BPM: {info.bpm}   Time sig: {info.time_signature}   Key: {info.key}")
     for p in written:
         print(f"  wrote {p}")
 
