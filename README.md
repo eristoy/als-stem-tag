@@ -92,6 +92,45 @@ duplicating them, and leaves the audio data untouched.
 > (`mutagen`); this tool is deliberately dependency-free. MP3 files are listed
 > in the manifest and skipped by `--tag-files`.
 
+### Verifying the tags
+
+You can confirm the embedded metadata with any independent audio-metadata tool
+— you don't have to trust `als-stem-tag`'s own output.
+
+[**ExifTool**](https://exiftool.org/) (`brew install exiftool`) is the most
+complete: it reads all three chunks, including decoding the tempo and root note
+back out of the `acid` chunk.
+
+```bash
+exiftool -Description -Tempo -Meter -RootNote -"Bwfxml Steminfo Key" "file.wav"
+```
+
+```
+Description             : PROJECT=Distaint Static;BPM=84;KEY=C Major;TSIG=4/4
+Tempo                   : 84
+Meter                   : 4/4
+Root Note               : C
+Bwfxml Steminfo Key     : C Major
+```
+
+For a quick check with a tool you may already have, `ffprobe` (from FFmpeg)
+surfaces the `bext` summary line as the `comment` tag:
+
+```bash
+ffprobe -v error -show_entries format_tags -of default=noprint_wrappers=1 "file.wav"
+```
+
+| Tool | `bext` | `iXML` | `acid` |
+| --- | :--: | :--: | :--: |
+| ExifTool | ✅ | ✅ | ✅ |
+| bwfmetaedit (BWF reference tool) | ✅ | ✅ | — |
+| ffprobe | ✅ | — | — |
+| mediainfo | ✅ | partial | — |
+
+> ExifTool labels the `acid` root note by octave (MIDI 60 shows as "High C").
+> The pitch class is what matters for key metadata; the octave label is just a
+> naming convention.
+
 ## What gets extracted
 
 | Field | Source in the `.als` XML |
